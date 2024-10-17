@@ -1,6 +1,6 @@
---import qualified Data.List
---import qualified Data.Array
---import qualified Data.Bits
+import qualified Data.List
+import qualified Data.Array
+import qualified Data.Bits
 
 -- PFL 2024/2025 Practical assignment 1
 
@@ -12,8 +12,14 @@ type Distance = Int
 
 type RoadMap = [(City,City,Distance)]
 
+deduplicator :: [City] -> [City] -> [City]
+deduplicator [] acc = acc
+deduplicator (x:xs) acc = if x `elem` acc
+    then deduplicator xs acc
+    else deduplicator xs (x:acc)
+
 cities :: RoadMap -> [City]
-cities = undefined -- modifiy this line to implement the solution, for each exercise not solved, leave the function definition like this
+cities roadmap = deduplicator (Data.List.sort [city | (city1, city2, _) <- roadmap, city <- [city1, city2]]) []
 
 areAdjacent :: RoadMap -> City -> City -> Bool
 areAdjacent = undefined
