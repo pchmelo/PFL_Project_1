@@ -12,26 +12,53 @@ type Distance = Int
 
 type RoadMap = [(City,City,Distance)]
 
-deduplicator :: [City] -> [City] -> [City]
-deduplicator [] acc = acc
-deduplicator (x:xs) acc = if x `elem` acc
-    then deduplicator xs acc
-    else deduplicator xs (x:acc)
+-- iterates through an array of cities and returns a list of cities without duplicates
+-- time complexity: O(n)
+deduplicator :: [City] -> [City]
+deduplicator [] = []
+deduplicator [x] = [x]
+deduplicator (x:xs) = if x == head xs
+                      then deduplicator xs
+                      else x : deduplicator xs
 
+-- returns a sorted list of all cities in the roadmap
+-- time complexity: O(nlog(n))
 cities :: RoadMap -> [City]
-cities roadmap = deduplicator (Data.List.sort [city | (city1, city2, _) <- roadmap, city <- [city1, city2]]) []
+cities roadmap = deduplicator (Data.List.sort [city | (city1, city2, _) <- roadmap, city <- [city1, city2]])
 
+-- returns true if the two cities in a roadmap are adjacent and false otherwise
+-- time complexity: O(n)
 areAdjacent :: RoadMap -> City -> City -> Bool
-areAdjacent = undefined
 
+areAdjacent roadmap city1 city2 = if city1 /= city2
+                                  then [] /= [city | (c1, c2, _) <- roadmap, city <- [c1, c2], (c1 == city1 && c2 == city2) || (c1 == city2 && c2 == city1)]
+                                  else True
+    
+
+-- returns the distance between two cities in a roadmap if they are adjacent and Nothing otherwise
+-- time complexity: O(n)
 distance :: RoadMap -> City -> City -> Maybe Distance
-distance = undefined
+distance roadmap city1 city2
+    | city1 == city2 = Just 0
+    | areAdjacent roadmap city1 city2 = Just (head [dist | (c1, c2, dist) <- roadmap, (c1 == city1 && c2 == city2) || (c1 == city2 && c2 == city1)])
+    | otherwise = Nothing
 
+-- returns an array of cities adjacent to a given city in a roadmap and the distance between them
+-- time complexity: O(n)
 adjacent :: RoadMap -> City -> [(City,Distance)]
-adjacent = undefined
+adjacent roadmap city = [(c, dist) | (c1, c2, dist) <- roadmap, c <- [c1, c2], (c1 == city || c2 == city) && c /= city]
 
+-- returns the sum of the distances between consecutive pairs of cities of a path in a roadmap if it is valid and Nothing otherwise
+-- time complexity: O(m * n) where m is the length of the path and n is the number of cities in the roadmap
 pathDistance :: RoadMap -> Path -> Maybe Distance
-pathDistance = undefined
+pathDistance _ [] = Just 0
+pathDistance _ [_] = Just 0
+pathDistance roadmap (x:y:xs)
+    | areAdjacent roadmap x y = do
+        dist <- distance roadmap x y
+        dist' <- pathDistance roadmap (y:xs)
+        return (dist + dist')
+    | otherwise = Nothing
 
 rome :: RoadMap -> [City]
 rome = undefined
