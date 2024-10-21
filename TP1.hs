@@ -60,8 +60,19 @@ pathDistance roadmap (x:y:xs)
         return (dist + dist')
     | otherwise = Nothing
 
+romeAux::RoadMap -> [City] -> [City] -> Int -> [City]
+romeAux _ [] res_acc _ = res_acc
+romeAux roadmap (x:xs) res_acc degree_acc = romeAux roadmap xs new_res_acc new_degree_acc
+    where 
+        l_degree = adjacent roadmap x
+        new_degree_acc = if length l_degree > degree_acc then length l_degree else degree_acc
+        new_res_acc = if length l_degree > degree_acc then [x] else if length l_degree == degree_acc then x : res_acc else res_acc
+        
+
+--returns the names of the cities with the highest number of roads connecting to them (i.e. the vertices with the highest degree).
 rome :: RoadMap -> [City]
-rome = undefined
+rome roadmap = romeAux roadmap list_cities [] 0
+    where list_cities = cities roadmap
 
 isStronglyConnected :: RoadMap -> Bool
 isStronglyConnected = undefined
