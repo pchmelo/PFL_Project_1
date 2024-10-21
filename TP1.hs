@@ -60,15 +60,41 @@ pathDistance roadmap (x:y:xs)
         return (dist + dist')
     | otherwise = Nothing
 
+-- returns an array of cities with the highest number of roads connecting to them
+-- time complexity: O(n^2)
+romeAux::RoadMap -> [City] -> [City] -> Int -> [City]
+romeAux _ [] res_acc _ = res_acc
+romeAux roadmap (x:xs) res_acc degree_acc = romeAux roadmap xs new_res_acc new_degree_acc
+    where 
+        l_degree = adjacent roadmap x
+        new_degree_acc = if length l_degree > degree_acc then length l_degree else degree_acc
+        new_res_acc = if length l_degree > degree_acc then [x] else if length l_degree == degree_acc then x : res_acc else res_acc
+        
+
+--returns an array of cities with the highest number of roads connecting to them
+-- time complexity: O(n^2)
 rome :: RoadMap -> [City]
-rome = undefined
+rome roadmap = romeAux roadmap list_cities [] 0
+    where list_cities = cities roadmap
 
+-- returns a list of cities reachable from a given city in a roadmap
+-- time complexity: O(V + E) where V is the number of cities and E is the number of roads
+dfs :: RoadMap -> City -> [City] -> [City]
+dfs roadmap city visited
+    | city `elem` visited = visited
+    | otherwise = foldl (\acc (city', _) -> dfs roadmap city' acc) (city : visited) (adjacent roadmap city)
+
+-- returns true if every city in a roadmap is reachable from every other city and false otherwise
+-- time complexity: O(V + E) where V is the number of cities and E is the number of roads
 isStronglyConnected :: RoadMap -> Bool
-isStronglyConnected = undefined
+isStronglyConnected roadmap = length(dfs roadmap (head list_cities) []) == length list_cities
+    where list_cities = cities roadmap
 
+-- returns all shortest paths connecting two cities
 shortestPath :: RoadMap -> City -> City -> [Path]
 shortestPath = undefined
 
+-- returns a solution for the travelling salesman problem
 travelSales :: RoadMap -> Path
 travelSales = undefined
 
@@ -84,3 +110,6 @@ gTest2 = [("0","1",10),("0","2",15),("0","3",20),("1","2",35),("1","3",25),("2",
 
 gTest3 :: RoadMap -- unconnected graph
 gTest3 = [("0","1",4),("2","3",2)]
+
+gTest4 :: RoadMap -- unconnected graph
+gTest4 = [("0", "2", 1), ("0", "4", 1), ("0", "5", 1), ("1", "4", 1), ("1", "5", 1), ("2", "3", 1), ("2", "4", 1), ("4", "5", 1), ("6", "7", 1)]
