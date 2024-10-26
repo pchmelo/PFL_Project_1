@@ -105,6 +105,7 @@ shortestPathAux roadmap ((cur_city, cur_path, cur_distance) : queue) shortest_pa
            else if cur_distance == shortest_distance
                 then shortestPathAux roadmap queue (cur_path : shortest_paths) shortest_distance end_city
                 else shortestPathAux roadmap queue shortest_paths shortest_distance end_city
+    | cur_distance >= shortest_distance = shortestPathAux roadmap queue shortest_paths shortest_distance end_city
     | otherwise = shortestPathAux roadmap new_queue shortest_paths shortest_distance end_city
     where new_queue = queue ++ [(adjacentCity, cur_path ++ [adjacentCity], cur_distance + d) | (adjacentCity, d) <- adjacent roadmap cur_city, adjacentCity `notElem` cur_path]
 
