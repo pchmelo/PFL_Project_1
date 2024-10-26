@@ -1,10 +1,8 @@
 import qualified Data.List
-import qualified Data.Array
-import qualified Data.Bits
+-- import qualified Data.Array
+-- import qualified Data.Bits
 
 -- PFL 2024/2025 Practical assignment 1
-
--- Uncomment the some/all of the first three lines to import the modules, do not change the code of these lines.
 
 type City = String
 type Path = [City]
@@ -17,9 +15,9 @@ type RoadMap = [(City,City,Distance)]
 deduplicator :: [City] -> [City]
 deduplicator [] = []
 deduplicator [x] = [x]
-deduplicator (x:xs) = if x == head xs
-                      then deduplicator xs
-                      else x : deduplicator xs
+deduplicator (x:xs) = if x == head xs 
+    then deduplicator xs 
+    else x : deduplicator xs
 
 -- returns a sorted list of all cities in the roadmap
 -- time complexity: O(nlog(n))
@@ -30,9 +28,9 @@ cities roadmap = deduplicator (Data.List.sort [city | (city1, city2, _) <- roadm
 -- time complexity: O(n)
 areAdjacent :: RoadMap -> City -> City -> Bool
 
-areAdjacent roadmap city1 city2 = if city1 /= city2
-                                  then [] /= [city | (c1, c2, _) <- roadmap, city <- [c1, c2], (c1 == city1 && c2 == city2) || (c1 == city2 && c2 == city1)]
-                                  else True
+areAdjacent roadmap city1 city2 = if city1 /= city2 
+    then [] /= [city | (c1, c2, _) <- roadmap, city <- [c1, c2], (c1 == city1 && c2 == city2) || (c1 == city2 && c2 == city1)] 
+    else True
     
 
 -- returns the distance between two cities in a roadmap if they are adjacent and Nothing otherwise
@@ -67,8 +65,14 @@ romeAux _ [] res_acc _ = res_acc
 romeAux roadmap (x:xs) res_acc degree_acc = romeAux roadmap xs new_res_acc new_degree_acc
     where 
         l_degree = adjacent roadmap x
-        new_degree_acc = if length l_degree > degree_acc then length l_degree else degree_acc
-        new_res_acc = if length l_degree > degree_acc then [x] else if length l_degree == degree_acc then x : res_acc else res_acc
+        new_degree_acc = if length l_degree > degree_acc 
+            then length l_degree 
+            else degree_acc
+        new_res_acc = if length l_degree > degree_acc 
+            then [x] 
+            else if length l_degree == degree_acc 
+                then x : res_acc 
+                else res_acc
         
 
 --returns an array of cities with the highest number of roads connecting to them
@@ -90,9 +94,26 @@ isStronglyConnected :: RoadMap -> Bool
 isStronglyConnected roadmap = length(dfs roadmap (head list_cities) []) == length list_cities
     where list_cities = cities roadmap
 
+-- returns all shortest paths connecting two cities using a bfs approach
+-- time complexity: O(V + E) where V is the number of cities and E is the number of roads
+shortestPathAux :: RoadMap -> [(City, Path, Distance)] -> [Path] -> Distance -> City -> [Path]
+shortestPathAux _ [] shortest_paths _ _ = shortest_paths
+shortestPathAux roadmap ((cur_city, cur_path, cur_distance) : queue) shortest_paths shortest_distance end_city
+    | cur_city == end_city =
+        if cur_distance < shortest_distance
+           then shortestPathAux roadmap queue [cur_path] cur_distance end_city
+           else if cur_distance == shortest_distance
+                then shortestPathAux roadmap queue (cur_path : shortest_paths) shortest_distance end_city
+                else shortestPathAux roadmap queue shortest_paths shortest_distance end_city
+    | otherwise = shortestPathAux roadmap new_queue shortest_paths shortest_distance end_city
+    where new_queue = queue ++ [(adjacentCity, cur_path ++ [adjacentCity], cur_distance + d) | (adjacentCity, d) <- adjacent roadmap cur_city, adjacentCity `notElem` cur_path]
+
 -- returns all shortest paths connecting two cities
+-- time complexity: O(V + E) where V is the number of cities and E is the number of roads
 shortestPath :: RoadMap -> City -> City -> [Path]
-shortestPath = undefined
+shortestPath roadmap start_city end_city
+    | start_city == end_city = [[start_city]]
+    | otherwise = shortestPathAux roadmap [(start_city, [start_city], 0)] [] maxBound end_city
 
 -- returns a solution for the travelling salesman problem
 travelSales :: RoadMap -> Path
@@ -111,5 +132,8 @@ gTest2 = [("0","1",10),("0","2",15),("0","3",20),("1","2",35),("1","3",25),("2",
 gTest3 :: RoadMap -- unconnected graph
 gTest3 = [("0","1",4),("2","3",2)]
 
-gTest4 :: RoadMap -- unconnected graph
-gTest4 = [("0", "2", 1), ("0", "4", 1), ("0", "5", 1), ("1", "4", 1), ("1", "5", 1), ("2", "3", 1), ("2", "4", 1), ("4", "5", 1), ("6", "7", 1)]
+gTest4 :: RoadMap
+gTest4 = [("0", "2", 1),("0", "4", 1),("0", "5", 1),("1", "4", 1),("1", "5", 1),("2", "3", 1),("2", "4", 1),("4", "5", 1),("6", "7", 1)]
+
+gTest5 :: RoadMap
+gTest5 = [("0", "1", 1),("0", "2", 3),("1", "2", 2),("1", "3", 5),("2", "3", 1),("2", "4", 6),("3", "4", 3)]
