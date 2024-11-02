@@ -44,7 +44,16 @@ to solves the `Traveling Salesman Problem (TSP)`. The algorithm tries to find th
 
 ### Core Concept
 
-The algorithm is based on the `Held-Karp algorithm`, which is a dynamic programming solution for TSP. It builds solutions incrementally by considering subsets of cities and finding optimal paths through those subsets.
+The algorithm is based on the `Held-Karp algorithm`, which is a dynamic programming solution for TSP. It builds solutions incrementally by considering subsets of cities and finding optimal paths through those subsets. The developed algorithm is based on the following formula:
+
+```
+C(S, i) = min{C(S-{i}, j) + d[j,i]} for j ∈ S, j ≠ i
+```
+Where:
+
+- C(S, i) = minimum cost path visiting all vertices in set S exactly once, ending at vertex i
+- S = subset of vertices including vertex i and vertex 1 (starting vertex)
+- d[j,i] = distance/cost from vertex j to vertex i
 
 ### Key Data Structures
 #### DPMatrix
@@ -77,7 +86,7 @@ Each index of the matrix contains:
 ```Haskell
 type DPIndex = (Int, BitMask)
 ```
-- `Int`: Index of the starting city
+- `Int`: Index of the ending city
 - `BitMask`: A BitMask (type BotMask = Int) which each bit represents a city. It serves to represent subsets of cities. 
 ```Text
 01101 -> Subset that represents the cities of index 0, 2 and 3
