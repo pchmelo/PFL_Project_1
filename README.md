@@ -66,6 +66,36 @@ The `shortestPath` function has two main components, the function in itself that
 
 The queue is a fundamental data structure for the BFS, allowing for the first-in-first-out processing of cities to explore. For this function, the queue stores tuples containing the current city, the path taken to reach it, and the distance traveled so far in the current path.
 
+### Algorithm Steps:
+
+1. **Initialization**:
+   - If `start_city` is the same as `end_city`, return a list containing just `[start_city]`.
+   - Initialize a queue with the tuple `(start_city, [start_city], 0)`:
+     - `start_city`: Current city.
+     - `[start_city]`: Current path taken.
+     - `0`: Current distance.
+   - Initialize an empty list `shortest_paths` to store valid paths.
+   - Set `shortest_distance` to a large value (`maxBound`).
+
+2. **Check for Destination**:
+   - If `cur_city` is equal to `end_city`:
+     - If `cur_distance` is less than `shortest_distance`:
+       - Set `shortest_paths` to `cur_path`.
+     - Else if `cur_distance` is equal to `shortest_distance`:
+       - Append `cur_path` to `shortest_paths`.
+     - Else ignore and continue processing the queue
+
+4. **Continue Exploration**:
+   - If `cur_distance` is greater than or equal to `shortest_distance`, skip further exploration.
+   - Otherwise, for each adjacent city `(adjacentCity, d)` obtained from `adjacent(roadmap cur_city)`:
+     - If `adjacentCity` is not already in `cur_path`:
+       - Construct a new path as `cur_path ++ [adjacentCity]`.
+       - Calculate the new distance as `cur_distance + d`.
+       - Enqueue `(adjacentCity, new_path, new_distance)`.
+
+5. **Return Result**:
+   - After processing the queue, return `shortest_paths`.
+
 ### Used Algorithms:
 
 #### Dijkstra's Algorithm:
@@ -155,7 +185,6 @@ type DPIndex = (Int, BitMask)
    - Backtrack using the `nextCity` pointers 
    - Reverse the path to get the correct order
 
-...
 
 ### Pseudocode
 
