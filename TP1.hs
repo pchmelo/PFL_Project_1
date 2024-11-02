@@ -114,6 +114,7 @@ shortestPathAux roadmap ((cur_city, cur_path, cur_distance) : queue) shortest_pa
 shortestPath :: RoadMap -> City -> City -> [Path]
 shortestPath roadmap start_city end_city
     | start_city == end_city = [[start_city]]
+    | end_city `notElem` (cities roadmap) = []
     | otherwise = shortestPathAux roadmap [(start_city, [start_city], 0)] [] maxBound end_city
 
 -- type for the dynamic programming matrix index

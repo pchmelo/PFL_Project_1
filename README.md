@@ -70,6 +70,7 @@ The queue is a fundamental data structure for the BFS, allowing for the first-in
 
 1. **Initialization**:
    - If `start_city` is the same as `end_city`, return a list containing just `[start_city]`.
+   - If `end_city` is not an element in the roadmap 
    - Initialize a queue with the tuple `(start_city, [start_city], 0)`:
      - `start_city`: Current city.
      - `[start_city]`: Current path taken.
@@ -85,7 +86,7 @@ The queue is a fundamental data structure for the BFS, allowing for the first-in
        - Append `cur_path` to `shortest_paths`.
      - Else ignore and continue processing the queue
 
-4. **Continue Exploration**:
+3. **Continue Exploration**:
    - If `cur_distance` is greater than or equal to `shortest_distance`, skip further exploration.
    - Otherwise, for each adjacent city `(adjacentCity, d)` obtained from `adjacent(roadmap cur_city)`:
      - If `adjacentCity` is not already in `cur_path`:
@@ -93,7 +94,7 @@ The queue is a fundamental data structure for the BFS, allowing for the first-in
        - Calculate the new distance as `cur_distance + d`.
        - Enqueue `(adjacentCity, new_path, new_distance)`.
 
-5. **Return Result**:
+4. **Return Result**:
    - After processing the queue, return `shortest_paths`.
 
 ### Used Algorithms:
