@@ -132,7 +132,7 @@ createDPMatrix :: RoadMap -> [City] -> Int -> DPMatrix
 - Creates the DP matrix with all values filled
 - It calls `createDPArray, addDistancesDPMatrix and fillDPMatrix` functions
 
-- Time complexity: O(n^2 * 2^n)
+- Time complexity: O(n^3 * 2^n)
 
 #### createDPArray 
 ```haskell
@@ -175,7 +175,7 @@ addDistancesDPMatrix :: RoadMap -> DPMatrix -> DPMatrix
 - Adds road distances to the DP matrix
 - Updates the matrix with direct connections between cities
 - Processes each road in the map and updates corresponding cells (subsets of 2 bits)
-- Time complexity: O(R) where R is the number of roads in the RoadMap
+- Time complexity: O(n * R) where R is the number of roads in the RoadMap and n is the number of cities
 
 `Cell Creation`
 
@@ -201,7 +201,7 @@ fillDPMatrix :: RoadMap -> DPMatrix -> Int -> DPMatrix
 - Implements the core dynamic programming algorithm for TSP
 - Fills the DP matrix with optimal paths for all possible subsets of cities
 - Uses bottom-up approach starting from smaller subsets to larger ones
-- Time complexity: 
+- Time complexity: O(n^3 * 2^n) 
 
 `Main Function (fillDPMatrix)`
 ```haskell
@@ -248,7 +248,7 @@ findMinPath :: RoadMap -> DPMatrix -> Int -> BitMask -> Maybe Path
 ```
 - Function finds the minimum cost path that visits all cities and returns to start
 - Input: RoadMap, DPMatrix (with computed solutions), number of cities, full bitmask
-- Time Complexity:
+- Time Complexity: O(n^3) 
 
 `Candidates generation`
 
@@ -341,7 +341,7 @@ reconstructPath :: DPMatrix -> DPIndex -> Path
 
 - Reconstructs the optimal path from a filled dynamic programming matrix
 - Returns a list containing a tuple of (path of cities, minimum distance)
-- Time complexity: 
+- Time complexity: O(n^2) 
 
 `reconstructPathAux`
 
@@ -366,7 +366,11 @@ reconstructPath :: DPMatrix -> DPIndex -> Path
 
 ### Time Complexity Analysis
 
-- Time Complexity: O(n^2 * 2^n)
-  - For each subset size (n iterations)
-  - For each valid subset of that size (approximately 2^n subsets)
-  - For each possible end city (n iterations)
+- Time Complexity: O(n^3 * 2^n):
+  - The `2^n` factor comes from the number of possible masks.
+  - One `n` factor comes from iterating over the cities for each mask.
+  - Another `n` factor comes from generating the list of previous cities.
+  - The third `n` factor comes from the foldl tryPath operation iterating over the previous cities.
+
+### Improvements
+The original Keld-Karp algorithm has a time complexity of `O(n^2 * 2^n)`, so a great improvement for our algorithm would be reducing the time complexity. After some research we had come with the solution; However, we handn't the time to aplly it. Our algorithm calcule every single path starting from each city, so knowing that we could only make ir for one path. 

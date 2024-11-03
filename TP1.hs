@@ -140,9 +140,24 @@ data PathDist = PathDist {
     distancePath :: Distance
 } deriving (Show, Eq)
 
+-- returns the minimum distance path from a RoadMap
+-- time complexity: O(n^3 * 2^n)
+travelSales :: RoadMap -> Path
+travelSales roadMap = minPath
+  where
+    list_cities = cities roadMap
+    num_cities = length list_cities
+    fullMask = Data.Bits.bit num_cities - 1
+    
+    dpMatrix = createDPMatrix roadMap list_cities num_cities
+    minPath = case (findMinPath roadMap dpMatrix num_cities fullMask) of
+        Nothing -> []
+        Just p -> p
+    
+
 
 -- returns a DP matrix from a roadmap and a list of cities
--- time complexity: O(n^2)
+-- time complexity: O(n^3 * 2^n) 
 createDPMatrix :: RoadMap -> [City] -> Int -> DPMatrix
 createDPMatrix roadMap list_cities num_cities =  dataMatrixFilled
     where
@@ -155,13 +170,13 @@ createDPMatrix roadMap list_cities num_cities =  dataMatrixFilled
         dataMatrixFilled = fillDPMatrix roadMap dataMatrixRoadMapValues num_cities
 
 -- returns an index to city array (0 .. n - 1) (City_1 .. City_n)
--- time complexity: O(n)
+-- time complexity: O(n) 
 createIndexToCity :: [City] -> Int -> (Data.Array.Array Int City)
 createIndexToCity list_cities num_cities =
     Data.Array.array (0, num_cities - 1) (zip [0..num_cities - 1] list_cities)
 
 -- returns a DP matrix array with all cells initialized to maxBound except for the diagonal cells
--- time complexity: O(n^2)
+-- time complexity: O(n * n^2) 
 createDPArray :: [City] -> Int -> (Data.Array.Array DPIndex DPCell)
 createDPArray list_cities num_cities = Data.Array.array bounds [((i, mask), initCell i mask) | i <- [0..num_cities - 1], mask <- [0..fullBitMask]]
     where
@@ -177,18 +192,18 @@ createDPArray list_cities num_cities = Data.Array.array bounds [((i, mask), init
                 nextCity = Nothing
             }
 
+-- returns a DPCell at a given index
+-- time complexity: O(1) 
+getDPCell :: DPMatrix -> Int -> BitMask -> DPCell
+getDPCell dpMatrix cityIndex mask = dpArray dpMatrix Data.Array.! (cityIndex, mask)
+
 -- returns a DPMatrix with an updated cell at a given index
 -- time complexity: O(1)
 updateDPMatricCell :: Data.Array.Array DPIndex DPCell -> DPIndex -> DPCell -> Data.Array.Array DPIndex DPCell
 updateDPMatricCell dpArray index newCell = dpArray Data.Array.// [(index, newCell)]
 
--- returns a DPCell at a given index
--- time complexity: O(1)
-getDPCell :: DPMatrix -> Int -> BitMask -> DPCell
-getDPCell dpMatrix cityIndex mask = dpArray dpMatrix Data.Array.! (cityIndex, mask)
-
 -- returns a bitmask for a list of cities
--- time complexity: O(n)
+-- time complexity: O(n) 
 calculateMask :: [City] -> Data.Array.Array Int City -> BitMask
 calculateMask cities indexToCityArray = foldl combineBits initialMask bitPositions
   where
@@ -197,7 +212,7 @@ calculateMask cities indexToCityArray = foldl combineBits initialMask bitPositio
     combineBits acc bitPos = acc Data.Bits..|. bitPos
 
 -- returns the index of the city
--- time complexity: O(n)
+-- time complexity: O(n) 
 cityIndex :: Data.Array.Array Int City -> City -> Int
 cityIndex indexToCityArray city = safeCityIndex
     where 
@@ -207,7 +222,7 @@ cityIndex indexToCityArray city = safeCityIndex
             Nothing -> error $ "City not found: " ++ city 
 
 -- returns a DPMatrix with the distances between cities (from the RoadMap) added
--- time complexity: O(n^2)
+-- time complexity: O(n*R) where R is the number of roads in the RoadMap and n is the number of cities 
 addDistancesDPMatrix :: RoadMap -> DPMatrix -> DPMatrix
 addDistancesDPMatrix roadMap dpMatrix = foldl addDistance dpMatrix roadMap
     where
@@ -232,15 +247,13 @@ addDistancesDPMatrix roadMap dpMatrix = foldl addDistance dpMatrix roadMap
                 dpMatrix { dpArray = updatedArray2 }
 
 
-------------
-
 -- returns a DPMatrix with the dynamic programming approach applied
--- time complexity: O(n^2 * 2^n)
+-- time complexity: O(n^3 * 2^n) 
 fillDPMatrix :: RoadMap -> DPMatrix -> Int -> DPMatrix
 fillDPMatrix roadMap dpMatrix num_cities = 
     foldl (processSubset roadMap num_cities) dpMatrix subsetSizes 
   where
-    subsetSizes = [3..num_cities]
+    subsetSizes = [2..num_cities]
     
 -- returns a DPMatrix with the dynamic programming approach applied to a subset of cities
 -- time complexity: O(2^n)
@@ -252,6 +265,8 @@ processSubset roadMap num_cities matrix size =
     fullMask = Data.Bits.bit num_cities - 1
     isValidMask mask = popCount num_cities mask == size
     
+    -- returns the number of set bits in a bitmask
+    -- time complexity: O(n)
     processMask :: DPMatrix -> BitMask -> DPMatrix
     processMask m mask = processSubsetMask roadMap size m mask num_cities
 
@@ -316,25 +331,8 @@ processCity roadMap mask num_cities matrix endCity =
                     }
                 else dpMat
 
---------------------------
-
--- returns the minimum distance path from a RoadMap
--- time complexity: O(n^2 * 2^n)
-travelSales :: RoadMap -> Path
-travelSales roadMap = minPath
-  where
-    list_cities = cities roadMap
-    num_cities = length list_cities
-    fullMask = Data.Bits.bit num_cities - 1
-    
-    dpMatrix = createDPMatrix roadMap list_cities num_cities
-    minPath = case (findMinPath roadMap dpMatrix num_cities fullMask) of
-        Nothing -> []
-        Just p -> p
-    
-
 -- returns the minimum distance path from a DPMatrix, return Nothing if no path is found
--- time complexity: O(n)
+-- time complexity: O(n^3) 
 findMinPath :: RoadMap -> DPMatrix -> Int -> BitMask -> Maybe Path
 findMinPath roadMap dpMatrix numCities fullMask = 
     if null validCandidates
@@ -373,14 +371,13 @@ findMinPath roadMap dpMatrix numCities fullMask =
 
 
 -- returns the path from a DPMatrix
--- time complexity: O(n)
+-- time complexity: O(n^2) 
 reconstructPath :: DPMatrix -> DPIndex -> [([City], Distance)]
 reconstructPath dpMatrix (endCityIdx, finalMask) =
     [ (reverse pathCities, minDistance (getDPCell dpMatrix endCityIdx finalMask)) ]
   where
     city_index = indexToCity dpMatrix 
     pathCities = reconstructPathAux endCityIdx finalMask []
-    
     
     reconstructPathAux :: Int -> BitMask -> Path -> Path
     reconstructPathAux currCityIdx currMask acc
