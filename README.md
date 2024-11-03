@@ -121,13 +121,13 @@ If the graph is not too dense, we can often consider it approximately **O(V+E+P)
 
 #### Possible Improvements:
 
-We could have implemented a priority queue using a minHeap to turn our functions into a true Dijkstra's algorithm which would have improved the time complexity to O((V+E)log(V)), although we choose not to, as we deemed this iprovement not worthy due to the added complexity and worse readibility in Haskell compared with other programming languages.
+We could have implemented a priority queue using a minHeap to turn our functions into a true Dijkstra's algorithm which would have improved the time complexity to O((V+E)log(V)), although we choose not to, as we deemed this iprovement not worthy due to not only the added complexity and worse readibility in Haskell compared with other programming languages, but also a lack of time to test how great of an improvement this change could have been.
 
 ## Travel Sales Explanation:
 
 ### Overview
-The `travelSales` function is a implementation of the dynamic programming with a bitmask approach
-to solves the `Traveling Salesman Problem (TSP)`. The algorithm tries to find the shortest possible route that visits each city exactly once and returns to the starting city. In case of no existance of a valid route, it returns a empety list.
+The `travelSales` function is an implementation of the dynamic programming with a bitmask approach
+to solve the `Traveling Salesman Problem (TSP)`. The algorithm tries to find the shortest possible route that visits each city exactly once and returns to the starting city. In case of no existance of a valid route, it returns an empty list.
 
 ### Core Concept
 
@@ -462,4 +462,4 @@ reconstructPath :: DPMatrix -> DPIndex -> Path
   - The third `n` factor comes from the foldl tryPath operation iterating over the previous cities.
 
 #### Possible Improvements
-The original Keld-Karp algorithm has a time complexity of `O(n^2 * 2^n)`, so a great improvement for our algorithm would be reducing the time complexity. After some research we had come with the solution; However, we handn't the time to aplly it. Our algorithm calcule every single path starting from each city, so knowing that we could only make ir for one path. 
+The original Held-Karp algorithm has a time complexity of `O(n^2 * 2^n)`, so there are some improvements we could make to the time complexity. After some research, we came up with a solution; However, we didn't have the time to implement it. Our algorithm calculates every answer for the TSP, but only returns one as asked, so knowing that, we could make some changes and have it return only one path.
