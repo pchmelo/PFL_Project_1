@@ -135,8 +135,30 @@ data DPMatrix = DPMatrix {
     indexToCity :: !(Data.Array.Array Int City)     
 } deriving (Show)
 
+-- PathDist type with a path and its distance
+data PathDist = PathDist {
+    path :: Path,
+    distancePath :: Distance
+} deriving (Show, Eq)
+
+-- returns the minimum distance path from a RoadMap
+-- time complexity: O(n^3 * 2^n)
+travelSales :: RoadMap -> Path
+travelSales roadMap = minPath
+  where
+    list_cities = cities roadMap
+    num_cities = length list_cities
+    fullMask = Data.Bits.bit num_cities - 1
+    
+    dpMatrix = createDPMatrix roadMap list_cities num_cities
+    minPath = case (findMinPath roadMap dpMatrix num_cities fullMask) of
+        Nothing -> []
+        Just p -> p
+    
+
+
 -- returns a DP matrix from a roadmap and a list of cities
--- time complexity: O(n^2)
+-- time complexity: O(n^3 * 2^n) 
 createDPMatrix :: RoadMap -> [City] -> Int -> DPMatrix
 createDPMatrix roadMap list_cities num_cities =  dataMatrixFilled
     where
@@ -149,13 +171,13 @@ createDPMatrix roadMap list_cities num_cities =  dataMatrixFilled
         dataMatrixFilled = fillDPMatrix roadMap dataMatrixRoadMapValues num_cities
 
 -- returns an index to city array (0 .. n - 1) (City_1 .. City_n)
--- time complexity: O(n)
+-- time complexity: O(n) 
 createIndexToCity :: [City] -> Int -> (Data.Array.Array Int City)
 createIndexToCity list_cities num_cities =
     Data.Array.array (0, num_cities - 1) (zip [0..num_cities - 1] list_cities)
 
 -- returns a DP matrix array with all cells initialized to maxBound except for the diagonal cells
--- time complexity: O(n^2)
+-- time complexity: O(n * n^2) 
 createDPArray :: [City] -> Int -> (Data.Array.Array DPIndex DPCell)
 createDPArray list_cities num_cities = Data.Array.array bounds [((i, mask), initCell i mask) | i <- [0..num_cities - 1], mask <- [0..fullBitMask]]
     where
@@ -171,13 +193,18 @@ createDPArray list_cities num_cities = Data.Array.array bounds [((i, mask), init
                 nextCity = Nothing
             }
 
+-- returns a DPCell at a given index
+-- time complexity: O(1) 
+getDPCell :: DPMatrix -> Int -> BitMask -> DPCell
+getDPCell dpMatrix cityIndex mask = dpArray dpMatrix Data.Array.! (cityIndex, mask)
+
 -- returns a DPMatrix with an updated cell at a given index
 -- time complexity: O(1)
 updateDPMatricCell :: Data.Array.Array DPIndex DPCell -> DPIndex -> DPCell -> Data.Array.Array DPIndex DPCell
 updateDPMatricCell dpArray index newCell = dpArray Data.Array.// [(index, newCell)]
 
 -- returns a bitmask for a list of cities
--- time complexity: O(n)
+-- time complexity: O(n) 
 calculateMask :: [City] -> Data.Array.Array Int City -> BitMask
 calculateMask cities indexToCityArray = foldl combineBits initialMask bitPositions
   where
@@ -186,7 +213,7 @@ calculateMask cities indexToCityArray = foldl combineBits initialMask bitPositio
     combineBits acc bitPos = acc Data.Bits..|. bitPos
 
 -- returns the index of the city
--- time complexity: O(n)
+-- time complexity: O(n) 
 cityIndex :: Data.Array.Array Int City -> City -> Int
 cityIndex indexToCityArray city = safeCityIndex
     where 
@@ -196,7 +223,7 @@ cityIndex indexToCityArray city = safeCityIndex
             Nothing -> error $ "City not found: " ++ city 
 
 -- returns a DPMatrix with the distances between cities (from the RoadMap) added
--- time complexity: O(n^2)
+-- time complexity: O(n*R) where R is the number of roads in the RoadMap and n is the number of cities 
 addDistancesDPMatrix :: RoadMap -> DPMatrix -> DPMatrix
 addDistancesDPMatrix roadMap dpMatrix = foldl addDistance dpMatrix roadMap
     where
@@ -221,10 +248,8 @@ addDistancesDPMatrix roadMap dpMatrix = foldl addDistance dpMatrix roadMap
                 dpMatrix { dpArray = updatedArray2 }
 
 
-------------
-
 -- returns a DPMatrix with the dynamic programming approach applied
--- time complexity: O(n^2 * 2^n)
+-- time complexity: O(n^3 * 2^n) 
 fillDPMatrix :: RoadMap -> DPMatrix -> Int -> DPMatrix
 fillDPMatrix roadMap dpMatrix num_cities = 
     foldl (processSubset roadMap num_cities) dpMatrix subsetSizes 
@@ -307,31 +332,13 @@ processCity roadMap mask num_cities matrix endCity =
                     }
                 else dpMat
 
---------------------------
-
--- returns the minimum distance path from a RoadMap
--- time complexity: O(n^2 * 2^n)
-travelSales :: RoadMap -> Path
-travelSales roadMap 
-    | null validPaths = []  
-    | otherwise =  res_path ++ [head res_path]
-  where
-    list_cities = cities roadMap
-    num_cities = length list_cities
-    fullMask = Data.Bits.bit num_cities - 1
-    
-    dpMatrix = createDPMatrix roadMap list_cities num_cities
-    minPath = findMinPath dpMatrix num_cities fullMask
-    
-    validPaths = [path | path <- [minPath], not (null path)]
-    res_path = reconstructPath dpMatrix minPath
-
--- returns the minimum distance path from a DPMatrix
--- time complexity: O(n)
-findMinPath :: DPMatrix -> Int -> BitMask -> DPIndex
-findMinPath dpMatrix numCities fullMask = 
-    fst (foldl1 minPathState 
-        [finalState | finalState <- candidates, isValidFinalState finalState] )
+-- returns the minimum distance path from a DPMatrix, return Nothing if no path is found
+-- time complexity: O(n^3) 
+findMinPath :: RoadMap -> DPMatrix -> Int -> BitMask -> Maybe Path
+findMinPath roadMap dpMatrix numCities fullMask = 
+    if null validCandidates
+    then Nothing
+    else Just (fst (foldl1 minPathState validPaths))
   where
     candidates = 
         [((endCity, mask), cell) 
@@ -339,23 +346,39 @@ findMinPath dpMatrix numCities fullMask =
           let mask = Data.Bits.setBit fullMask endCity,
           let cell = dpArray dpMatrix Data.Array.! (endCity, mask)
         ]
-    
-    isValidFinalState ((endCity, mask), cell) = (mask == fullMask && minDistance cell /= maxBound) 
 
-    minPathState ((city1, mask1), cell1) ((city2, mask2), cell2)
-        | minDistance cell1 <= minDistance cell2 = ((city1, mask1), cell1)
-        | otherwise = ((city2, mask2), cell2)
+    validCandidates = filter isValidFinalState candidates 
+    isValidFinalState ((endCity, mask), cell) = (mask == fullMask && minDistance cell /= maxBound) 
+    
+    candidatesPaths = concatMap (\((endCity, mask), cell) -> reconstructPath dpMatrix (endCity, mask)) validCandidates    
+    
+    validPaths = map addStartingCity (filter isValidPath candidatesPaths)
+    
+    isValidPath (path, _) = case distance roadMap (head path) (last path) of
+        Just _  -> True
+        Nothing -> False
+
+    addStartingCity :: ([City], Distance) -> ([City], Distance)
+    addStartingCity (path, dist) = 
+        let newPath = path ++ [head path]
+            newDist = case distance roadMap (head path) (last path) of
+                Just d  -> dist + d
+                Nothing -> dist
+        in (newPath, newDist)  
+    
+    minPathState (path_1, dist_1) (path_2, dist_2)
+        | dist_1 <= dist_2 = (path_1, dist_1)
+        | otherwise = (path_2, dist_2)
+
 
 -- returns the path from a DPMatrix
--- time complexity: O(n)
-reconstructPath :: DPMatrix -> DPIndex -> Path
-reconstructPath dpMatrix (endCityIdx, finalMask)
-    | null pathCities = [] 
-    | otherwise = reverse pathCities
+-- time complexity: O(n^2) 
+reconstructPath :: DPMatrix -> DPIndex -> [([City], Distance)]
+reconstructPath dpMatrix (endCityIdx, finalMask) =
+    [ (reverse pathCities, minDistance (getDPCell dpMatrix endCityIdx finalMask)) ]
   where
-    city_index = indexToCity dpMatrix
+    city_index = indexToCity dpMatrix 
     pathCities = reconstructPathAux endCityIdx finalMask []
-    
     
     reconstructPathAux :: Int -> BitMask -> Path -> Path
     reconstructPathAux currCityIdx currMask acc
@@ -370,8 +393,6 @@ reconstructPath dpMatrix (endCityIdx, finalMask)
                 Nothing -> [] 
       where
         nextCityCell = dpArray dpMatrix Data.Array.! (currCityIdx, currMask)
-
-
 
 tspBruteForce :: RoadMap -> Path
 tspBruteForce = undefined -- only for groups of 3 people; groups of 2 people: do not edit this function
@@ -393,10 +414,19 @@ gTest5 :: RoadMap
 gTest5 = [("0", "1", 1),("0", "2", 3),("1", "2", 2),("1", "3", 5),("2", "3", 1),("2", "4", 6),("3", "4", 3)]
 
 gTest6 :: RoadMap
-gTest6 = [("1", "2", 1), ("1", "3", 1), ("3", "2", 4)]
+gTest6 = [("1", "2", 1), ("3", "2", 4)]
 
 gTest7 :: RoadMap
 gTest7 = [("0", "1", 2), ("0", "2", 9), ("0", "3", 10), ("0", "4", 7),
           ("1", "2", 6), ("1", "3", 4), ("1", "4", 3),
           ("2", "3", 8), ("2", "4", 5),
           ("3", "4", 1)]
+
+gTest8 :: RoadMap
+gTest8 = [("A", "B", 2), ("A", "C", 9), ("A", "D", 10), ("A", "E", 7),
+          ("B", "C", 6), ("B", "D", 4), ("B", "E", 3),
+          ("C", "D", 8), ("C", "E", 5),
+          ("D", "E", 1)]
+
+gTest9 :: RoadMap
+gTest9 = [("0", "1", 2), ("0", "2", 9), ("0", "3", 10), ("0", "4", 7)]
