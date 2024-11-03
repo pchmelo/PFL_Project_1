@@ -107,7 +107,7 @@ The `shortestPath` function takes strong inspiration from Dijkstra's algorithm b
 
 The BFS is a part of the Dijkstra's algorithm and it is used to explore all neighboring vertices at the present depth prior to moving on to vertices at the next depth level.
 
-### Time Complexity
+### Time Complexity:
 
 Since the `shortestPath` function was made with Dijkstra's algorithm in mind it shares the same time complexity as one without a priority queue which is **O(V^2)** for the absolute worst case scenario where the graph is extremely dense leading to many paths having to be explored.
 
@@ -118,6 +118,10 @@ However, in practice, it will usually perform much better due to:
 - The `notElem` check prevents cycles
 
 If the graph is not too dense, we can often consider it approximately **O(V+E+P)** or even **O(V+E)**, where V is the number of cities, E is the number of roads and P is the number of generated paths.
+
+#### Possible Improvements:
+
+We could have implemented a priority queue using a minHeap to turn our functions into a true Dijkstra's algorithm which would have improved the time complexity to O((V+E)log(V)), although we choose not to, as we deemed this iprovement not worthy due to the added complexity and worse readibility in Haskell compared with other programming languages.
 
 ## Travel Sales Explanation:
 
@@ -457,5 +461,5 @@ reconstructPath :: DPMatrix -> DPIndex -> Path
   - Another `n` factor comes from generating the list of previous cities.
   - The third `n` factor comes from the foldl tryPath operation iterating over the previous cities.
 
-### Improvements
+#### Possible Improvements
 The original Keld-Karp algorithm has a time complexity of `O(n^2 * 2^n)`, so a great improvement for our algorithm would be reducing the time complexity. After some research we had come with the solution; However, we handn't the time to aplly it. Our algorithm calcule every single path starting from each city, so knowing that we could only make ir for one path. 
