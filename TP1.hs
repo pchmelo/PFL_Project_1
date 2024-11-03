@@ -11,6 +11,12 @@ type Distance = Int
 type RoadMap = [(City,City,Distance)]
 
 -- iterates through an array of cities and returns a list of cities without duplicates
+{-
+    [City] - list of cities to be deduplicated
+
+    return:
+        [City] - list of cities without duplicates
+-}
 -- time complexity: O(n)
 deduplicator :: [City] -> [City]
 deduplicator [] = []
@@ -20,11 +26,25 @@ deduplicator (x:xs) = if x == head xs
     else x : deduplicator xs
 
 -- returns a sorted list of all cities in the roadmap
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+
+    return:
+        [City] - list of cities without duplicates
+-}
 -- time complexity: O(nlog(n))
 cities :: RoadMap -> [City]
 cities roadmap = deduplicator (Data.List.sort [city | (city1, city2, _) <- roadmap, city <- [city1, city2]])
 
 -- returns true if the two cities in a roadmap are adjacent and false otherwise
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    City - first city
+    City - second city
+
+    return:
+        Bool - true if the two cities are adjacent, false otherwise
+-}
 -- time complexity: O(n)
 areAdjacent :: RoadMap -> City -> City -> Bool
 
@@ -34,6 +54,14 @@ areAdjacent roadmap city1 city2 = if city1 /= city2
     
 
 -- returns the distance between two cities in a roadmap if they are adjacent and Nothing otherwise
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    City - first city
+    City - second city
+
+    return:
+        Maybe Distance - distance between the two cities if they are adjacent, Nothing otherwise
+-}
 -- time complexity: O(n)
 distance :: RoadMap -> City -> City -> Maybe Distance
 distance roadmap city1 city2
@@ -42,11 +70,25 @@ distance roadmap city1 city2
     | otherwise = Nothing
 
 -- returns an array of cities adjacent to a given city in a roadmap and the distance between them
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    City - city to find the adjacent cities
+
+    return:
+        [(City, Distance)] - list of tupples of adjacent cities and the distance between them
+-}
 -- time complexity: O(n)
 adjacent :: RoadMap -> City -> [(City,Distance)]
 adjacent roadmap city = [(c, dist) | (c1, c2, dist) <- roadmap, c <- [c1, c2], (c1 == city || c2 == city) && c /= city]
 
 -- returns the sum of the distances between consecutive pairs of cities of a path in a roadmap if it is valid and Nothing otherwise
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    Path - path to calculate the distance
+
+    return:
+        Maybe Distance - sum of the distances between consecutive pairs of cities of a path if it is valid, Nothing otherwise
+-}
 -- time complexity: O(m * n) where m is the length of the path and n is the number of cities in the roadmap
 pathDistance :: RoadMap -> Path -> Maybe Distance
 pathDistance _ [] = Just 0
@@ -59,6 +101,15 @@ pathDistance roadmap (x:y:xs)
     | otherwise = Nothing
 
 -- returns an array of cities with the highest number of roads connecting to them
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    [City] - list of cities in the roadmap
+    [City] - accumulator for the result
+    Int - accumulator for the degree of the cities in the roadmap
+
+    return:
+        [City] - list of cities with the highest number of roads connecting to them
+-}
 -- time complexity: O(n^2)
 romeAux::RoadMap -> [City] -> [City] -> Int -> [City]
 romeAux _ [] res_acc _ = res_acc
@@ -76,12 +127,26 @@ romeAux roadmap (x:xs) res_acc degree_acc = romeAux roadmap xs new_res_acc new_d
         
 
 --returns an array of cities with the highest number of roads connecting to them
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+
+    return:
+        [City] - list of cities with the highest number of roads connecting to them
+-}
 -- time complexity: O(n^2)
 rome :: RoadMap -> [City]
 rome roadmap = romeAux roadmap list_cities [] 0
     where list_cities = cities roadmap
 
 -- returns a list of cities reachable from a given city in a roadmap
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    City - city to start the search
+    [City] - list of visited cities
+
+    return:
+        [City] - list of cities reachable from the given city
+-}
 -- time complexity: O(V + E) where V is the number of cities and E is the number of roads
 dfs :: RoadMap -> City -> [City] -> [City]
 dfs roadmap city visited
@@ -89,12 +154,28 @@ dfs roadmap city visited
     | otherwise = foldl (\acc (city', _) -> dfs roadmap city' acc) (city : visited) (adjacent roadmap city)
 
 -- returns true if every city in a roadmap is reachable from every other city and false otherwise
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+
+    return:
+        Bool - true if every city in the roadmap is reachable from every other city, false otherwise
+-}
 -- time complexity: O(V + E) where V is the number of cities and E is the number of roads
 isStronglyConnected :: RoadMap -> Bool
 isStronglyConnected roadmap = length(dfs roadmap (head list_cities) []) == length list_cities
     where list_cities = cities roadmap
 
 -- returns all shortest paths connecting two cities using a bfs approach
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    [(City, Path, Distance)] - queue of cities to visit with their path and distance
+    [Path] - list of shortest paths
+    Distance - shortest distance
+    City - end city
+
+    return:
+        [Path] - list of shortest paths connecting two cities
+-}
 -- time complexity: O(V + E) where V is the number of cities and E is the number of roads
 shortestPathAux :: RoadMap -> [(City, Path, Distance)] -> [Path] -> Distance -> City -> [Path]
 shortestPathAux _ [] shortest_paths _ _ = shortest_paths
@@ -110,6 +191,14 @@ shortestPathAux roadmap ((cur_city, cur_path, cur_distance) : queue) shortest_pa
     where new_queue = queue ++ [(adjacentCity, cur_path ++ [adjacentCity], cur_distance + d) | (adjacentCity, d) <- adjacent roadmap cur_city, adjacentCity `notElem` cur_path]
 
 -- returns all shortest paths connecting two cities
+{-
+    Roadmap - roadmap(Graph) containing all the cities(Vertexes) and roads(Edges) connecting them
+    City - start city
+    City - end city
+
+    return:
+        [Path] - list of shortest paths connecting two cities
+-}
 -- time complexity: O(V + E) where V is the number of cities and E is the number of roads
 shortestPath :: RoadMap -> City -> City -> [Path]
 shortestPath roadmap start_city end_city
