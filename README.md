@@ -92,6 +92,17 @@ type DPIndex = (Int, BitMask)
 01101 -> Subset that represents the cities of index 0, 2 and 3
 ``` 
 
+#### PathDist
+```Haskell
+data PathDist = PathDist {
+    path :: Path,
+    distancePath :: Distance
+} deriving (Show, Eq)
+```
+- `path`: Represents a path a cities
+- `distancePath`: Represents the total distance of the path
+
+
 ### Algorithm Steps
 
 1. **Initialization**
@@ -100,34 +111,17 @@ type DPIndex = (Int, BitMask)
    - Fill initial distances between directly connected cities
 
 2. **Main DP Loop**
-   - Process subsets of increasing sizes (2 to n)
+   - Process subsets of increasing sizes (3 to n)
    - For each subset size:
      - Generate all valid bitmasks representing that many cities
      - For each valid ending city in the subset:
-       - Try all possible previous cities
-       - Update minimum distance if a better path is found
+       - Creates a new Subset without the ending city and search in DPMatrix for that subset.
+       - Calcule the minimum between all the possibilities of subset and update the DPMatrix with the new subset calculated
 
-3. **Path Reconstruction**
-   - Start from the optimal final state
-   - Backtrack using the `nextCity` pointers 
-   - Reverse the path to get the correct order
-
-...
-
-### Pseudocode
-
-### Time Complexity Analysis
-
-- Space Complexity: O(n * 2^n)
-  - Stores a value for each combination of:
-    - Visited cities subset (2^n possibilities)
-    - Current city (n possibilities)
-
-- Time Complexity: O(n^2 * 2^n)
-  - For each subset size (n iterations)
-  - For each valid subset of that size (approximately 2^n subsets)
-  - For each possible end city (n iterations)
-  - For each possible previous city (n iterations)
+3. **Find Min Path**
+   - Generate all candidates of minimum path  using the `nextCity` pointers to backtrack
+   - Reverse the path to get the correct order and add the starting city in the final of the path, if possivel
+   - From all the possivel solutions, search for the minimum one
 
 ### Key Functions
 
@@ -135,23 +129,244 @@ type DPIndex = (Int, BitMask)
 ```haskell
 createDPMatrix :: RoadMap -> [City] -> Int -> DPMatrix
 ```
-- Creates the initial DP matrix
-- Initializes base cases
+- Creates the DP matrix with all values filled
+- It calls `createDPArray, addDistancesDPMatrix and fillDPMatrix` functions
+
+- Time complexity: O(n^2 * 2^n)
+
+#### createDPArray 
+```haskell
+createDPArray :: [City] -> Int -> (Data.Array.Array DPIndex DPCell)
+```
+`Purpose`
+- Creates and initializes a dynamic programming array used for solving TSP
 - Time complexity: O(n^2)
+
+`Base Case`
+```haskell
+| mask == Data.Bits.bit i = DPCell {
+    minDistance = 0,
+    nextCity = Nothing
+}
+```
+- When mask only contains current city
+- Distance is 0 (starting point)
+- No next city defined
+
+Default Case
+
+```haskell
+| otherwise = DPCell {
+    minDistance = maxBound,
+    nextCity = Nothing
+}
+```
+
+- For all other combinations
+- Distance set to maximum possible value
+- No next city defined
+
+#### addDistancesDPMatrix
+```haskell
+addDistancesDPMatrix :: RoadMap -> DPMatrix -> DPMatrix
+```
+`Purpose`
+
+- Adds road distances to the DP matrix
+- Updates the matrix with direct connections between cities
+- Processes each road in the map and updates corresponding cells (subsets of 2 bits)
+- Time complexity: O(R) where R is the number of roads in the RoadMap
+
+`Cell Creation`
+
+```haskell
+newCell_1 = DPCell {
+    minDistance = dist,
+    nextCity = Just city2
+}
+newCell_2 = DPCell {
+    minDistance = dist,
+    nextCity = Just city1
+}
+```
+
+- Creates cells for both directions
+- Stores distance and next city information
 
 #### fillDPMatrix
 ```haskell
 fillDPMatrix :: RoadMap -> DPMatrix -> Int -> DPMatrix
 ```
-- Main function that implements the dynamic programming logic
-- Processes subsets of increasing size
-- Updates optimal paths and distances
-- Time complexity: O(n^2 * 2^n)
+`Purpose`
+- Implements the core dynamic programming algorithm for TSP
+- Fills the DP matrix with optimal paths for all possible subsets of cities
+- Uses bottom-up approach starting from smaller subsets to larger ones
+- Time complexity: 
+
+`Main Function (fillDPMatrix)`
+```haskell
+fillDPMatrix :: RoadMap -> DPMatrix -> Int -> DPMatrix
+```
+- Processes subsets of increasing sizes (3 to num_cities)
+- Uses foldl to accumulate updates through all subset sizes
+
+`Subset Processing (processSubset)` 
+```haskell
+processSubset :: RoadMap -> Int -> DPMatrix -> Int -> DPMatrix
+```
+- Processes all valid masks of given size
+- Filters masks based on proper bit count
+
+`processSubsetMask`
+```haskell
+processSubsetMask :: RoadMap -> Int -> DPMatrix -> BitMask -> Int -> DPMatrix
+```
+
+- Processes each valid end city for a mask
+- Coordinates path calculations
+
+`processCity`
+```haskell
+processCity :: RoadMap -> BitMask -> Int -> DPMatrix -> Int -> DPMatrix
+```
+- Processes paths ending at specific city
+- Evaluates all possible previous cities
+
+`tryPath`
+```haskell
+tryPath :: RoadMap -> DPMatrix -> Int -> DPMatrix
+```
+- Calculate previous mask
+- Get relevant cells
+- Check distance between cities
+- Update if better path found
+
+#### findMinPath
+`Purpose and Overview`
+```haskell
+findMinPath :: RoadMap -> DPMatrix -> Int -> BitMask -> Maybe Path
+```
+- Function finds the minimum cost path that visits all cities and returns to start
+- Input: RoadMap, DPMatrix (with computed solutions), number of cities, full bitmask
+- Time Complexity:
+
+`Candidates generation`
+
+```haskell
+candidates = [((endCity, mask), cell)
+    | endCity <- [0..numCities-1],
+    let mask = Data.Bits.setBit fullMask endCity,
+    let cell = dpArray dpMatrix Data.Array.! (endCity, mask)]
+```
+
+- Iterates through all possible end cities (0 to numCities-1)
+For each city:
+
+- Creates a mask including that city
+Retrieves corresponding cell from DPMatrix
+
+
+- Creates list of candidates with their states
+
+`Candidate Validation`
+
+```haskell
+validCandidates = filter isValidFinalState candidates
+isValidFinalState ((endCity, mask), cell) = 
+    (mask == fullMask && minDistance cell /= maxBound)
+```
+
+- Filters candidates based on two criteria:
+
+  - Mask must be full (all cities included)
+  - Distance must be valid (not maxBound)
+
+
+- Removes invalid or impossible paths
+
+`Path Reconstruction`
+```haskell
+candidatesPaths = concatMap 
+    (\((endCity, mask), cell) -> reconstructPath dpMatrix (endCity, mask)) 
+    validCandidates
+```
+- For each valid candidate:
+
+  - Reconstructs complete path from DPMatrix
+  - Maintains both path and distance information
+
+
+- Creates list of all possible complete paths
+
+`Path Validation`
+```haskell
+validPaths = map addStartingCity (filter isValidPath candidatesPaths)
+isValidPath (path, _) = case distance roadMap (head path) (last path) of
+    Just _ -> True
+    Nothing -> False
+```
+
+ - Checks if each path is valid:
+
+   - Verifies connection between first and last city exists
+
+
+ - Filters out invalid paths
+ - Adds starting city to complete the cycle
+
+`Final Result Processing`
+
+```haskell
+if null validCandidates
+    then Nothing
+    else Just (fst (foldl1 minPathState validPaths))
+```
+
+ - Checks if any valid candidates exist
+ - If no valid candidates:
+
+   - Returns Nothing
+
+
+ - If valid candidates exist:
+
+   - Finds minimum distance path
+   - Returns Just path
 
 #### reconstructPath
 ```haskell
 reconstructPath :: DPMatrix -> DPIndex -> Path
 ```
-- Builds the final path from the DP table
-- Starts from optimal end state and follows next city pointers
-- Time complexity: O(n)
+`Purpose`
+
+- Reconstructs the optimal path from a filled dynamic programming matrix
+- Returns a list containing a tuple of (path of cities, minimum distance)
+- Time complexity: 
+
+`reconstructPathAux`
+
+- Auxiliary recursive function that does the actual path reconstruction
+ - Parameters:
+
+   - currCityIdx: Current city's index
+   - currMask: Current state bitmask
+   - acc: Accumulator for the path
+
+`reconstructPathAux recursive base case` 
+```haskell
+-- When only current city is in mask
+| currMask == Data.Bits.bit currCityIdx = 
+    city_index Data.Array.! currCityIdx : acc
+```
+`reconstructPathAux recursive case` 
+
+ - Get next city from DP cell
+ - Clear current city from mask
+ - Recursively build path
+
+### Time Complexity Analysis
+
+- Time Complexity: O(n^2 * 2^n)
+  - For each subset size (n iterations)
+  - For each valid subset of that size (approximately 2^n subsets)
+  - For each possible end city (n iterations)
